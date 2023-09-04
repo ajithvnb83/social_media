@@ -31,7 +31,8 @@ export const signup = async (req, res, next) => {
     const user = new userModel({
         name,
         email,
-        password: hasedPassword
+        password: hasedPassword,
+        blogs:[],
     })
 
     try {

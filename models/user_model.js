@@ -16,7 +16,8 @@ const userSchema = schema({
         type:String,
         requied:true,
         minLength:6
-    }
+    },
+    blogs:[{type:mongoose.Types.ObjectId, ref:"Blog", requied:true}]
 });
 
 export default mongoose.model("User",userSchema);
