@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import blogModel from "../models/blog_model.js";
 import userModel from "../models/user_model.js";
 
@@ -32,9 +33,19 @@ export const createBlog = async (req, res, next) => {
         user,
     });
     try {
-        blog.save();
+        /// directly save the only the blog into the db
+        // blog.save(); 
+
+        //save the blog with user
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        await blog.save({ session });
+        existingUser.blogs.push(blog);
+        await existingUser.save({ session });
+        session.commitTransaction();
     } catch (e) {
         console.log(e);
+        return res.status(500).json({ message: e });
     }
     return res.status(200).json({ blog });
 }
@@ -78,7 +89,9 @@ export const deleteBlogById = async (req, res, next) => {
     console.log(blogId);
     let blog;
     try {
-        blog = await blogModel.findByIdAndRemove(blogId);
+        blog = await blogModel.findByIdAndRemove(blogId).populate("user");
+        await blog.user.blogs.pull(blog);
+        await blog.user.save();
     } catch (e) {
         console.log(e);
     }
@@ -89,4 +102,20 @@ export const deleteBlogById = async (req, res, next) => {
         message: "successfully deleted the blog",
         blog: blog
     });
+}
+
+export const getBlogsByUserId = async (req, res, next) => {
+    const userId = req.params.id;
+    let userBlogs;
+    try{
+        userBlogs = await userModel.findOne({}, undefined,)
+        userBlogs = await userModel.findById(userId).populate("blogs");
+        console.log(userBlogs);
+    }catch(e){
+        console.log(e);
+    }
+    if(!userBlogs){
+        res.status(400).json({message:"No blogs posted this user"});
+    }
+    res.status(200).json({blogs:userBlogs.blogs});
 }
